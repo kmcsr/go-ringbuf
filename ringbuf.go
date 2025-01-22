@@ -63,7 +63,7 @@ func (r *RingBuffer[T]) Poll() (v T, ok bool) {
 	if !r.hasElem {
 		return v, false
 	}
-	v, ok = r.buf[r.i], true
+	v, r.buf[r.i] = r.buf[r.i], v
 	r.i++
 	if r.i == len(r.buf) {
 		r.i = 0
@@ -71,7 +71,7 @@ func (r *RingBuffer[T]) Poll() (v T, ok bool) {
 	if r.i == r.j {
 		r.hasElem = false
 	}
-	return
+	return v, true
 }
 
 // Get returns the i-th element in the buffer
@@ -112,6 +112,25 @@ func (r *RingBuffer[T]) Len() int {
 // Cap returns the total space of the buffer
 func (r *RingBuffer[T]) Cap() int {
 	return len(r.buf)
+}
+
+// Clear set ring buffer's length to zero
+// It does not dereference old elements
+func (r *RingBuffer[T]) Clear() {
+	r.i = 0
+	r.j = 0
+	r.hasElem = false
+}
+
+// Reset set ring buffer's length to zero and dereference all elements
+func (r *RingBuffer[T]) Reset() {
+	r.i = 0
+	r.j = 0
+	r.hasElem = false
+	var empty T
+	for i := range len(r.buf) {
+		r.buf[i] = empty
+	}
 }
 
 // ForEach iterate the buffer from first to last
