@@ -17,6 +17,7 @@ package ringbuf
 
 import (
 	"fmt"
+	"iter"
 )
 
 type RingBuffer[T any] struct {
@@ -134,27 +135,63 @@ func (r *RingBuffer[T]) Reset() {
 }
 
 // ForEach iterate the buffer from first to last
-// if the iterator returns true, the iterate will break
+// if the iterator returns false, the iterate will break
 func (r *RingBuffer[T]) ForEach(iter func(v T) bool) {
 	if !r.hasElem {
 		return
 	}
 	if r.j > r.i {
 		for i := r.i; i < r.j; i++ {
-			if iter(r.buf[i]) {
+			if !iter(r.buf[i]) {
 				return
 			}
 		}
 		return
 	}
 	for i := r.i; i < len(r.buf); i++ {
-		if iter(r.buf[i]) {
+		if !iter(r.buf[i]) {
 			return
 		}
 	}
 	for i := 0; i < r.j; i++ {
-		if iter(r.buf[i]) {
+		if !iter(r.buf[i]) {
 			return
 		}
 	}
+}
+
+// ForEachReversed iterate the buffer from last to first
+// if the iterator returns false, the iterate will break
+func (r *RingBuffer[T]) ForEachReversed(iter func(v T) bool) {
+	if !r.hasElem {
+		return
+	}
+	if r.j > r.i {
+		for i := r.j - 1; i >= r.i; i-- {
+			if !iter(r.buf[i]) {
+				return
+			}
+		}
+		return
+	}
+	for i := r.j - 1; i >= 0; i-- {
+		if !iter(r.buf[i]) {
+			return
+		}
+	}
+	for i := len(r.buf) - 1; i >= r.i; i-- {
+		if !iter(r.buf[i]) {
+			return
+		}
+	}
+}
+
+// Iter returns an iterator of the buffer that iterate from first to last
+func (r *RingBuffer[T]) Iter() iter.Seq[T] {
+	return r.ForEach
+}
+
+// IterReversed returns an iterator of the buffer that iterate from last to first
+func (r *RingBuffer[T]) IterReversed() iter.Seq[T] {
+	return r.ForEachReversed
 }
